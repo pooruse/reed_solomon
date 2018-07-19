@@ -130,10 +130,18 @@ def rs_find_error_locator_and_evaluator(synd):
     x_pre = [0]
     x_cur = [1]
     while True:
+        v_cur_start = 0
+        for i in range(len(v_cur)):
+            if v_cur[i] != 0:
+                break
+            v_cur_start = i
+
+        v_cur = v_cur[v_cur_start:]
         if len(v_cur) <= (nsym/2):
             break
         
         q,r = gf_poly_div(v_pre, v_cur)
+        
         v_pre = v_cur
         v_cur = r
         x_tmp = x_pre
@@ -176,18 +184,29 @@ if __name__ == "__main__":
     encoded_data = rs_encode_msg([1,2,3,4,5,6,7,8,9,10,11])
     correct_synd = rs_calc_syndromes(encoded_data)
     if not rs_check_syndromes(correct_synd):
-        raise RuntimeError("syndrome should be an all zero array when the data is correct")
+        raise RuntimeError("Syndrome should be an all zero array when the data is correct")
     
-    err = [0,0,0,0,0,13,0,0,0,0,0,0,2,0,0]
+    err = [0,0,0,0,0,0,0,3,7,0,0,0,0,0,0]
     r = gf_poly_add(encoded_data, err)
     synd = rs_calc_syndromes(r)
-    locator, evaluator = rs_find_error_locator_and_evaluator(synd)
+    if rs_check_syndromes(synd):
+        print("No error in the message")
+    else:
+        locator, evaluator = rs_find_error_locator_and_evaluator(synd)
 
-    err_loc = rs_find_errors(locator, len(r))
-    msg = rs_correct_errata(r, err_loc, locator, evaluator)
-    print("")
-    print("result",msg)
-    print("expect",encoded_data)
-    # test for poly div
+        err_loc = rs_find_errors(locator, len(r))
+        print("{} errors in the message".format(len(err_loc)))
+        if len(err_loc) > nsym:
+            raise RuntimeError("Error more than {}".format(nsym))
+        elif len(err_loc) > (nsym/2):
+            raise RuntimeError("Error can't be correct")
+
+
+        msg = rs_correct_errata(r, err_loc, locator, evaluator)
+        print("result",msg)
+        print("expect",encoded_data)
+        if msg == encoded_data:
+            print("Error been fixed")
+
 
     
