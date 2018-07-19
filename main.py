@@ -3,7 +3,7 @@ field_generator = 0x11d
 gf_log = [0] * nele
 gf_exp = [0] * nele * 2
 code_generator = []
-nsym = 4
+nsym = 8
 
 def gf_init_table():
     global filed_generator
@@ -94,6 +94,13 @@ def gf_poly_div(dividend, divisor):
     return gf_poly_scale(tmp_dividend[:separator], gf_inv(normalizer)), tmp_dividend[separator:]
 
 
+def gf_poly_delete_leading_zero(p):
+    for i in range(len(p)):
+        if p[i] != 0:
+            return p[i:]
+
+    return p
+
 def rs_init_code_generator():
     global code_generator
     global nsym
@@ -130,13 +137,7 @@ def rs_find_error_locator_and_evaluator(synd):
     x_pre = [0]
     x_cur = [1]
     while True:
-        v_cur_start = 0
-        for i in range(len(v_cur)):
-            if v_cur[i] != 0:
-                break
-            v_cur_start = i
-
-        v_cur = v_cur[v_cur_start:]
+        v_cur = gf_poly_delete_leading_zero(v_cur)
         if len(v_cur) <= (nsym/2):
             break
         
@@ -151,11 +152,18 @@ def rs_find_error_locator_and_evaluator(synd):
 
 def rs_correct_errata(r, err_loc, locator, evaluator):
     msg_in = list(r)
-    dlocator = [locator[i] for i in range(1,len(locator),2)]
+    dlocator = list(locator)
+    for i in range(0, len(locator), 2):
+        dlocator[len(locator) - i - 1] = 0
+    dlocator = dlocator[:-1]
+    
+    dlocator = gf_poly_delete_leading_zero(dlocator)
     for e in err_loc:
         x = gf_exp[e]
         x_inv = gf_inv(x)
-        mag = gf_mul(x, gf_div(gf_poly_eval(evaluator, x_inv), gf_poly_eval(dlocator, x_inv)))
+        dividend = gf_poly_eval(evaluator, x_inv)
+        divisor = gf_poly_eval(dlocator, x_inv)
+        mag = gf_mul(x, gf_div(dividend, divisor))
         msg_in[len(r)-e-1] = mag ^ r[len(r)-e-1]
 
     return msg_in
@@ -181,32 +189,47 @@ if __name__ == "__main__":
     print("")
     gf_init_table()
     rs_init_code_generator()
-    encoded_data = rs_encode_msg([1,2,3,4,5,6,7,8,9,10,11])
-    correct_synd = rs_calc_syndromes(encoded_data)
-    if not rs_check_syndromes(correct_synd):
-        raise RuntimeError("Syndrome should be an all zero array when the data is correct")
+
+    def test(msg, err_loc):
+        encoded_data = rs_encode_msg(msg)
+        correct_synd = rs_calc_syndromes(encoded_data)
+        if not rs_check_syndromes(correct_synd):
+            raise RuntimeError("Syndrome should be an all zero array when the data is correct")
+
+        err = [0] * len(encoded_data)
+        for e in err_loc:
+            err[e[0]] = e[1]
+
+        r = gf_poly_add(encoded_data, err)
+        synd = rs_calc_syndromes(r)
+        if rs_check_syndromes(synd):
+            print("No error in the message")
+        else:
+            locator, evaluator = rs_find_error_locator_and_evaluator(synd)
+
+            err_loc = rs_find_errors(locator, len(r))
+            if len(err_loc) == 0:
+                raise RuntimeError("Too many error to fix")
+
+            print("{} errors in the message".format(len(err_loc)))
+            if len(err_loc) > nsym:
+                raise RuntimeError("Error more than {}".format(nsym))
+            elif len(err_loc) > (nsym/2):
+                raise RuntimeError("Error can't be correct")
+
+            msg_fixed = rs_correct_errata(r, err_loc, locator, evaluator)
+            # print("expect", encoded_data)
+            # print("result", msg_fixed)
+
+            if msg_fixed == encoded_data:
+                print("Error been fixed")
+
+    test([1,2,3,4,5,6,7,8,9,10,11], [[3,5],[10,10]])
+    test([1,2,3,4,5,6,7,8,9,10,11], [[3,5]])
+    test([1,2,3,4,5,6,7,8,9,10,11], [[6,7],[12,99]])
+    test([1,2,3,4,5,6,7,8,9,10,11], [[3,250]])
+    test([1,2,3,4,5,6,7,8,9,10,11], [[3,250],[4,179],[5,123]])
+    test([1,2,3,4,5,6,7,8,9,10,11], [[3,250],[4,179],[5,123]])
     
-    err = [0,0,0,0,0,0,0,3,7,0,0,0,0,0,0]
-    r = gf_poly_add(encoded_data, err)
-    synd = rs_calc_syndromes(r)
-    if rs_check_syndromes(synd):
-        print("No error in the message")
-    else:
-        locator, evaluator = rs_find_error_locator_and_evaluator(synd)
-
-        err_loc = rs_find_errors(locator, len(r))
-        print("{} errors in the message".format(len(err_loc)))
-        if len(err_loc) > nsym:
-            raise RuntimeError("Error more than {}".format(nsym))
-        elif len(err_loc) > (nsym/2):
-            raise RuntimeError("Error can't be correct")
-
-
-        msg = rs_correct_errata(r, err_loc, locator, evaluator)
-        print("result",msg)
-        print("expect",encoded_data)
-        if msg == encoded_data:
-            print("Error been fixed")
-
 
     
