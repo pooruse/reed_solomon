@@ -141,8 +141,7 @@ def rs_find_error_locator_and_evaluator(synd):
         x_cur = gf_poly_add(x_tmp, gf_poly_mul(q, x_cur))
     return x_cur, v_cur
 
-def rs_correct_errata(r, locator, evaluator):
-    err_loc = rs_find_errors(locator, len(r))
+def rs_correct_errata(r, err_loc, locator, evaluator):
     msg_in = list(r)
     dlocator = [locator[i] for i in range(1,len(locator),2)]
     for e in err_loc:
@@ -183,8 +182,9 @@ if __name__ == "__main__":
     r = gf_poly_add(encoded_data, err)
     synd = rs_calc_syndromes(r)
     locator, evaluator = rs_find_error_locator_and_evaluator(synd)
-    
-    msg = rs_correct_errata(r, locator, evaluator)
+
+    err_loc = rs_find_errors(locator, len(r))
+    msg = rs_correct_errata(r, err_loc, locator, evaluator)
     print("")
     print("result",msg)
     print("expect",encoded_data)
