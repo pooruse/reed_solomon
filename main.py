@@ -26,7 +26,7 @@ def gf_div(x,y):
         raise ZeroDivisionError()
     if x == 0:
         return 0
-    return gf_exp[((gf_log[x] + nele - 1) - gf_log[y]) % (nele - 1)]
+    return gf_exp[((gf_log[x] + nele - 1) - gf_log[y])]
 
 def gf_mul(x,y):
     if x == 0 or y == 0:
