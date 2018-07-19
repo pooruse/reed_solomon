@@ -1,5 +1,5 @@
-nele = 16
-field_generator = 0x13
+nele = 256
+field_generator = 0x11d
 gf_log = [0] * nele
 gf_exp = [0] * nele * 2
 code_generator = []
@@ -146,28 +146,32 @@ def rs_correct_errata(r, locator, evaluator):
     msg_in = list(r)
     dlocator = [locator[i] for i in range(1,len(locator),2)]
     for e in err_loc:
-        x = gf_exp[nele-e-1-1]
+        x = gf_exp[e]
         x_inv = gf_inv(x)
         mag = gf_mul(x, gf_div(gf_poly_eval(evaluator, x_inv), gf_poly_eval(dlocator, x_inv)))
-        msg_in[e] = mag ^ r[e]
+        msg_in[len(r)-e-1] = mag ^ r[len(r)-e-1]
 
     return msg_in
 
 def rs_find_errors(locator, nmsg):
     ret = []
-    tmp_locator = list(locator)
+    a = gf_inv(gf_exp[nele - nmsg])
+    tmp_locator = [0] * len(locator)
+    for i in range(len(locator)):
+        tmp_locator[i] = gf_mul(locator[i], gf_pow(a, i))
+    
     for i in range(nmsg):
         res = reduce(lambda x,y: x^y, tmp_locator)
         for j in range(1, len(tmp_locator)):
             index = len(tmp_locator) - j - 1
             tmp_locator[index] = gf_mul(tmp_locator[index], gf_exp[j])
-            
         if res == 0:
-            ret.append(i-1)
-            
+            ret.append(nmsg - i - 1)
+
     return ret
 
 if __name__ == "__main__":
+    print("")
     gf_init_table()
     rs_init_code_generator()
     encoded_data = rs_encode_msg([1,2,3,4,5,6,7,8,9,10,11])
@@ -181,7 +185,9 @@ if __name__ == "__main__":
     locator, evaluator = rs_find_error_locator_and_evaluator(synd)
     
     msg = rs_correct_errata(r, locator, evaluator)
-    print(msg)
+    print("")
+    print("result",msg)
+    print("expect",encoded_data)
     # test for poly div
 
     
