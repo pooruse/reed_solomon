@@ -1,0 +1,11 @@
+* Introduction
+  This is a reed-solomon code implement in python.
+* Specification
+  - Look-up table Galois functions
+  - Correct error by Euclidean decoding algorithm
+* Reference
+  - Tutorial in https://en.wikiversity.org/wiki/Reed%E2%80%93Solomon_codes_for_coders
+  - Reed-Solomon error correction, C.K.P Clarke, BBC R&D White Paper WHP031, July 2002
+    https://downloads.bbc.co.uk/rd/pubs/whp/whp-pdf-files/WHP031.pdf
+  -  Modified Euclidean Algorithms for Decoding Reed-Solomon Codes, Dilip V. Sarwate, Zhiyuan Yan, 22 Jun 2009
+    https://arxiv.org/abs/0906.3778
