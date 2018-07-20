@@ -94,7 +94,7 @@ def gf_poly_div(dividend, divisor):
     return gf_poly_scale(tmp_dividend[:separator], gf_inv(normalizer)), tmp_dividend[separator:]
 
 
-def gf_poly_delete_leading_zero(p):
+def gf_poly_delete_leading_zeros(p):
     for i in range(len(p)):
         if p[i] != 0:
             return p[i:]
@@ -137,7 +137,7 @@ def rs_find_error_locator_and_evaluator(synd):
     x_pre = [0]
     x_cur = [1]
     while True:
-        v_cur = gf_poly_delete_leading_zero(v_cur)
+        v_cur = gf_poly_delete_leading_zeros(v_cur)
         if len(v_cur) <= (nsym/2):
             break
         
@@ -157,7 +157,7 @@ def rs_correct_errata(r, err_loc, locator, evaluator):
         dlocator[len(locator) - i - 1] = 0
     dlocator = dlocator[:-1]
     
-    dlocator = gf_poly_delete_leading_zero(dlocator)
+    dlocator = gf_poly_delete_leading_zeros(dlocator)
     for e in err_loc:
         x = gf_exp[e]
         x_inv = gf_inv(x)
